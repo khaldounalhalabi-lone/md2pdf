@@ -15,7 +15,7 @@ prints the result onto one tall page with no page breaks.
   Done  report.pdf  (248.3 KB in 4.2s)
 ```
 
-> **Before publishing this repo** — two things to fix first.
+> **Before publishing this repo** — three things to do first.
 
 **1. Set the real repository.** The install commands below use a placeholder,
 and the installers refuse to run against it rather than fetching a 404:
@@ -27,18 +27,29 @@ sed -i 's|YOUR-USER/md-to-pdf|<owner>/<repo>|g' README.md install.sh install.ps1
 The URLs point at the `master` branch, matching this repo. If you push to `main`
 instead, swap that too (or pass `MD2PDF_BRANCH=main`).
 
-**2. Stop tracking the compiled binary.** `md2pdf` is 121 MB — over GitHub's 100
-MB per-file limit — and is in the initial commit, so a push will be rejected. It
-is in `.gitignore` now, but that does not untrack it:
+**2. Get the compiled binary out of git.** `md2pdf` is 121 MB — over GitHub's
+100 MB per-file limit — and is committed, so a push will be rejected. It is in
+`.gitignore` now, but that does not untrack it, and dropping it from the current
+commit is not enough while older commits still carry the blob:
 
 ```bash
 git rm --cached md2pdf
-git commit --amend      # the binary is only in the one commit so far
+git commit -m "stop tracking the compiled binary"
+git filter-repo --path md2pdf --invert-paths   # purge it from history
 ```
+
+Nothing is pushed yet, so if `git filter-repo` isn't installed, starting the
+history over is just as good:
+`rm -rf .git && git init && git add . && git commit`.
+
+**3. Tag a release.** The install commands download prebuilt binaries from the
+latest GitHub release; see [Releases](#releases) below. Until one exists, the
+scripts fall back to building with Deno.
 
 ## Install
 
-No clone required — the installers fetch the source themselves.
+One command, no options, nothing to install first — not even Deno. The installer
+downloads the prebuilt binary, puts it on your `PATH`, and checks that it runs.
 
 ### Linux (Ubuntu / Debian) and macOS
 
@@ -46,71 +57,36 @@ No clone required — the installers fetch the source themselves.
 curl -fsSL https://raw.githubusercontent.com/YOUR-USER/md-to-pdf/master/install.sh | bash
 ```
 
+Lands in `~/.local/bin/md2pdf`, and adds that directory to your `PATH` in
+`~/.bashrc`, `~/.zshrc` or `~/.profile` (whichever matches your shell) if it
+isn't there already. Open a new terminal — or `source` that file — and `md2pdf`
+works from anywhere.
+
 ### Windows (PowerShell 5.1+)
 
 ```powershell
 irm https://raw.githubusercontent.com/YOUR-USER/md-to-pdf/master/install.ps1 | iex
 ```
 
-Either one installs [Deno](https://deno.com) first if it is missing, installs
-the `md2pdf` command, offers to put it on your `PATH`, and finishes by running
-`md2pdf --version` to prove it works. Nothing is written outside your home
-directory, and every change is asked about first — add `-y` (or `-Yes`) for an
-unattended install.
+Lands in `%LOCALAPPDATA%\Programs\md2pdf\md2pdf.exe` and is added to your user
+`PATH`. Open a new terminal and `md2pdf` works from anywhere.
 
-### Install options
+Both scripts write only inside your home directory, and re-running one is
+harmless — it overwrites the binary and leaves your `PATH` alone if it is
+already set. `MD2PDF_REPO=me/my-fork` before the command installs from a fork.
 
-Pass options through the pipe:
+### If you already have Deno
 
-```bash
-# standalone ~120 MB binary — no Deno needed to run it
-curl -fsSL https://raw.githubusercontent.com/YOUR-USER/md-to-pdf/master/install.sh | bash -s -- --compile
-
-# unattended, custom location and command name
-curl -fsSL .../install.sh | bash -s -- --yes --root ~/.local --name md2pdf
-```
-
-```powershell
-# PowerShell needs the script turned into a scriptblock to accept arguments
-& ([scriptblock]::Create((irm https://raw.githubusercontent.com/YOUR-USER/md-to-pdf/master/install.ps1))) -Compile
-```
-
-| Option (bash / PowerShell)     | What it does                                                                  |
-| ------------------------------ | ----------------------------------------------------------------------------- |
-| `--compile` / `-Compile`       | Build a standalone binary (~120 MB) instead of a small Deno-managed command   |
-| `--root DIR` / `-Root DIR`     | Install root; the command lands in `DIR/bin`                                  |
-| `--name NAME` / `-Name NAME`   | Rename the command                                                            |
-| `--source URL` / `-Source URL` | Install from a different `main.ts` (a fork, a branch, a local path)           |
-| `--uninstall` / `-Uninstall`   | Remove it again                                                               |
-| `-y`, `--yes` / `-Yes`         | Answer yes to every prompt                                                    |
-| `-h`, `--help`                 | Show the installer's own help (bash; use `Get-Help .\install.ps1` on Windows) |
-
-`MD2PDF_REPO`, `MD2PDF_BRANCH` and `MD2PDF_SOURCE` override where the source is
-fetched from, which is handy for forks:
-
-```bash
-curl -fsSL .../install.sh | MD2PDF_REPO=me/my-fork bash
-```
-
-### Without the installer
-
-Deno can install the command directly, since dependencies are pinned inside the
-source rather than in an import map:
+Nothing above needs it, but Deno can install the command straight from source:
 
 ```bash
 deno install -grfA --name md2pdf https://raw.githubusercontent.com/YOUR-USER/md-to-pdf/master/main.ts
 ```
 
-### From a clone
-
-Running the installer inside a checkout points the command at that folder's
-`main.ts` instead of a URL, so `git pull` is enough to update it — just don't
-move the folder afterwards.
-
-```bash
-git clone https://github.com/YOUR-USER/md-to-pdf.git && cd md-to-pdf
-./install.sh
-```
+The install scripts also fall back to building with Deno when there is no
+release binary for your platform (or no release at all yet) — inside a clone
+they build from the checkout, so `./install.sh` works before you ever tag a
+release.
 
 ## Usage
 
@@ -155,7 +131,9 @@ plain lines when it isn't printing to a terminal.
 
 ## Requirements
 
-- **Deno 2** — installed automatically by the installers.
+- **Nothing to install first.** The binary is self-contained — it bundles its
+  own runtime, which is why it is 90–120 MB depending on platform. Deno is only
+  needed to work on the source.
 - **Internet access** for `plantuml` fences; a diagram that fails to render is
   left in the PDF as plain text and reported at the end, rather than failing the
   whole run.
@@ -164,20 +142,45 @@ plain lines when it isn't printing to a terminal.
 
 ## Update / uninstall
 
+Update by re-running the installer; it fetches the latest release and overwrites
+the binary in place.
+
 ```bash
-# installed from a URL: re-run the installer
 curl -fsSL https://raw.githubusercontent.com/YOUR-USER/md-to-pdf/master/install.sh | bash
+```
 
-# installed from a clone
-git pull                       # a URL-less install already points at your checkout
+To remove it, delete the binary and the `PATH` line the installer added:
 
-# remove it
-./install.sh --uninstall       # or: curl -fsSL .../install.sh | bash -s -- --uninstall
+```bash
+rm ~/.local/bin/md2pdf
+# then drop the "# added by the md2pdf installer" lines from ~/.bashrc (or ~/.zshrc, ~/.profile)
 ```
 
 ```powershell
-.\install.ps1 -Uninstall
+Remove-Item "$env:LOCALAPPDATA\Programs\md2pdf" -Recurse
+# then remove that folder from your user PATH (System Properties → Environment Variables)
 ```
+
+## Releases
+
+The install scripts download from
+`https://github.com/<owner>/<repo>/releases/latest/download/…`, so they need a
+release with the binaries attached.
+[`.github/workflows/release.yml`](.github/workflows/release.yml) builds all six
+targets and publishes them when you push a tag:
+
+```bash
+git tag v1.0.0 && git push origin v1.0.0
+```
+
+| Asset                        | Platform             |
+| ---------------------------- | -------------------- |
+| `md2pdf-linux-x86_64`        | Linux, Intel/AMD     |
+| `md2pdf-linux-aarch64`       | Linux, ARM           |
+| `md2pdf-macos-x86_64`        | macOS, Intel         |
+| `md2pdf-macos-aarch64`       | macOS, Apple silicon |
+| `md2pdf-windows-x86_64.exe`  | Windows, Intel/AMD   |
+| `md2pdf-windows-aarch64.exe` | Windows, ARM         |
 
 ## Development
 
@@ -203,7 +206,9 @@ deno fmt && deno lint
 ├── examples/
 │   └── sample.md      demo document with a diagram
 ├── install.sh         installer for Linux / macOS
-└── install.ps1        installer for Windows
+├── install.ps1        installer for Windows
+└── .github/workflows/
+    └── release.yml    builds and publishes the release binaries
 ```
 
 Only `cli.ts` and `ui.ts` touch the terminal; the pipeline reports through
