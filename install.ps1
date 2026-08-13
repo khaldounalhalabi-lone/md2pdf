@@ -16,7 +16,10 @@
 #>
 
 $ErrorActionPreference = "Stop"
-Set-StrictMode -Version Latest
+# No Set-StrictMode on purpose. This script runs on machines we cannot test on,
+# under whatever PowerShell they have; strict mode turns ordinary things — a
+# pipeline that matched nothing, an unset variable — into hard failures right
+# in the middle of an install.
 
 $Name = "md2pdf"
 $Repo = if ($env:MD2PDF_REPO) { $env:MD2PDF_REPO } else { "khaldounalhalabi-lone/md2pdf" }
@@ -43,7 +46,11 @@ Write-Host "  installer"
 Write-Host ""
 
 # ── 1. which build do we need? ────────────────────────────────────────────
-$arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "aarch64" } else { "x86_64" }
+# PROCESSOR_ARCHITECTURE reports the *process* architecture, so a 32-bit
+# PowerShell on a 64-bit machine says "x86"; ARCHITEW6432 tells the truth.
+$machine = $env:PROCESSOR_ARCHITEW6432
+if (-not $machine) { $machine = $env:PROCESSOR_ARCHITECTURE }
+$arch = if ($machine -eq "ARM64") { "aarch64" } else { "x86_64" }
 $asset = "$Name-windows-$arch.exe"
 $url = "https://github.com/$Repo/releases/latest/download/$asset"
 
@@ -53,16 +60,30 @@ $temp = Join-Path ([System.IO.Path]::GetTempPath()) "$Name-$([System.IO.Path]::G
 
 Write-Step "Downloading $asset…"
 $downloaded = $false
+$progress = $ProgressPreference
 try {
   # Some older hosts default to TLS 1.0, which github.com refuses.
   [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+  # Invoke-WebRequest's progress bar makes a ~90 MB download crawl on PS 5.1.
+  $ProgressPreference = "SilentlyContinue"
   Invoke-WebRequest -Uri $url -OutFile $temp -UseBasicParsing
-  Move-Item -Force -Path $temp -Destination $Target
   $downloaded = $true
-  Write-Ok "Installed $Target"
 } catch {
   Write-Warn "No prebuilt binary at $url"
+} finally {
+  $ProgressPreference = $progress
 }
+
+if ($downloaded) {
+  try {
+    Move-Item -Force -Path $temp -Destination $Target
+  } catch {
+    Stop-WithError ("Downloaded it, but could not write $Target`n" +
+      "    Close any running md2pdf and try again. ($($_.Exception.Message))")
+  }
+  Write-Ok "Installed $Target"
+}
+if (Test-Path $temp) { Remove-Item $temp -Force -ErrorAction SilentlyContinue }
 
 if (-not $downloaded) {
   # No published build for this platform — but if Deno is here, build one.
@@ -80,15 +101,22 @@ if (-not $downloaded) {
 }
 
 # ── 3. PATH ───────────────────────────────────────────────────────────────
-$needsReload = $false   # Set-StrictMode: every variable must exist before use
+# Compared entry by entry on purpose: piping into Where-Object and asking for
+# .Count blows up in Windows PowerShell 5.1 when the result is a single item or
+# nothing at all.
+$needsReload = $false
 $userPath = [Environment]::GetEnvironmentVariable("Path", "User")
-$alreadyThere = ($userPath -split ';' |
-  Where-Object { $_.TrimEnd('\') -ieq $BinDir.TrimEnd('\') }).Count -gt 0
+if ($null -eq $userPath) { $userPath = "" }
+
+$alreadyThere = $false
+foreach ($entry in $userPath.Split(';')) {
+  if ($entry.Trim().TrimEnd('\') -ieq $BinDir.TrimEnd('\')) { $alreadyThere = $true }
+}
 
 if ($alreadyThere) {
   Write-Ok "$BinDir is already on your PATH"
 } else {
-  $updated = if ([string]::IsNullOrEmpty($userPath)) { $BinDir } else { "$userPath;$BinDir" }
+  $updated = if ($userPath -eq "") { $BinDir } else { $userPath.TrimEnd(';') + ";$BinDir" }
   [Environment]::SetEnvironmentVariable("Path", $updated, "User")
   Write-Ok "Added $BinDir to your PATH"
   $needsReload = $true
