@@ -15,37 +15,6 @@ prints the result onto one tall page with no page breaks.
   Done  report.pdf  (248.3 KB in 4.2s)
 ```
 
-> **Before publishing this repo** — three things to do first.
-
-**1. Set the real repository.** The install commands below use a placeholder,
-and the installers refuse to run against it rather than fetching a 404:
-
-```bash
-sed -i 's|YOUR-USER/md-to-pdf|<owner>/<repo>|g' README.md install.sh install.ps1
-```
-
-The URLs point at the `master` branch, matching this repo. If you push to `main`
-instead, swap that too (or pass `MD2PDF_BRANCH=main`).
-
-**2. Get the compiled binary out of git.** `md2pdf` is 121 MB — over GitHub's
-100 MB per-file limit — and is committed, so a push will be rejected. It is in
-`.gitignore` now, but that does not untrack it, and dropping it from the current
-commit is not enough while older commits still carry the blob:
-
-```bash
-git rm --cached md2pdf
-git commit -m "stop tracking the compiled binary"
-git filter-repo --path md2pdf --invert-paths   # purge it from history
-```
-
-Nothing is pushed yet, so if `git filter-repo` isn't installed, starting the
-history over is just as good:
-`rm -rf .git && git init && git add . && git commit`.
-
-**3. Tag a release.** The install commands download prebuilt binaries from the
-latest GitHub release; see [Releases](#releases) below. Until one exists, the
-scripts fall back to building with Deno.
-
 ## Install
 
 One command, no options, nothing to install first — not even Deno. The installer
@@ -54,7 +23,7 @@ downloads the prebuilt binary, puts it on your `PATH`, and checks that it runs.
 ### Linux (Ubuntu / Debian) and macOS
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR-USER/md-to-pdf/master/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/khaldounalhalabi-lone/md2pdf/main/install.sh | bash
 ```
 
 Lands in `~/.local/bin/md2pdf`, and adds that directory to your `PATH` in
@@ -65,7 +34,7 @@ works from anywhere.
 ### Windows (PowerShell 5.1+)
 
 ```powershell
-irm https://raw.githubusercontent.com/YOUR-USER/md-to-pdf/master/install.ps1 | iex
+irm https://raw.githubusercontent.com/khaldounalhalabi-lone/md2pdf/main/install.ps1 | iex
 ```
 
 Lands in `%LOCALAPPDATA%\Programs\md2pdf\md2pdf.exe` and is added to your user
@@ -80,7 +49,7 @@ already set. `MD2PDF_REPO=me/my-fork` before the command installs from a fork.
 Nothing above needs it, but Deno can install the command straight from source:
 
 ```bash
-deno install -grfA --name md2pdf https://raw.githubusercontent.com/YOUR-USER/md-to-pdf/master/main.ts
+deno install -grfA --name md2pdf https://raw.githubusercontent.com/khaldounalhalabi-lone/md2pdf/main/main.ts
 ```
 
 The install scripts also fall back to building with Deno when there is no
@@ -146,7 +115,7 @@ Update by re-running the installer; it fetches the latest release and overwrites
 the binary in place.
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/YOUR-USER/md-to-pdf/master/install.sh | bash
+curl -fsSL https://raw.githubusercontent.com/khaldounalhalabi-lone/md2pdf/main/install.sh | bash
 ```
 
 To remove it, delete the binary and the `PATH` line the installer added:
@@ -164,8 +133,8 @@ Remove-Item "$env:LOCALAPPDATA\Programs\md2pdf" -Recurse
 ## Releases
 
 The install scripts download from
-`https://github.com/<owner>/<repo>/releases/latest/download/…`, so they need a
-release with the binaries attached.
+`https://github.com/khaldounalhalabi-lone/md2pdf/releases/latest/download/…`, so
+they need a release with the binaries attached.
 [`.github/workflows/release.yml`](.github/workflows/release.yml) builds all six
 targets and publishes them when you push a tag:
 

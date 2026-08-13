@@ -8,7 +8,7 @@
   `md2pdf` works in any new terminal. No options, no Deno, nothing to configure.
 
 .EXAMPLE
-  irm https://raw.githubusercontent.com/YOUR-USER/md-to-pdf/master/install.ps1 | iex
+  irm https://raw.githubusercontent.com/khaldounalhalabi-lone/md2pdf/main/install.ps1 | iex
 
 .NOTES
   If Windows blocks the script file, run it as:
@@ -19,8 +19,8 @@ $ErrorActionPreference = "Stop"
 Set-StrictMode -Version Latest
 
 $Name = "md2pdf"
-$Repo = if ($env:MD2PDF_REPO) { $env:MD2PDF_REPO } else { "YOUR-USER/md-to-pdf" }
-$Branch = if ($env:MD2PDF_BRANCH) { $env:MD2PDF_BRANCH } else { "master" }
+$Repo = if ($env:MD2PDF_REPO) { $env:MD2PDF_REPO } else { "khaldounalhalabi-lone/md2pdf" }
+$Branch = if ($env:MD2PDF_BRANCH) { $env:MD2PDF_BRANCH } else { "main" }
 $BinDir = Join-Path $env:LOCALAPPDATA "Programs\$Name"
 $Target = Join-Path $BinDir "$Name.exe"
 
@@ -41,11 +41,6 @@ Write-Host ""
 Write-Host "  $Name" -ForegroundColor Magenta -NoNewline
 Write-Host "  installer"
 Write-Host ""
-
-if ($Repo -match 'YOUR-USER') {
-  Stop-WithError ("This installer still has a placeholder repository in it.`n" +
-    "    Set the real one, e.g.:  `$env:MD2PDF_REPO = 'owner/repo'")
-}
 
 # ── 1. which build do we need? ────────────────────────────────────────────
 $arch = if ($env:PROCESSOR_ARCHITECTURE -eq "ARM64") { "aarch64" } else { "x86_64" }

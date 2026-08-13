@@ -1,15 +1,15 @@
 #!/usr/bin/env bash
 # md2pdf installer — Ubuntu / Debian / any Linux, and macOS.
 #
-#   curl -fsSL https://raw.githubusercontent.com/YOUR-USER/md-to-pdf/master/install.sh | bash
+#   curl -fsSL https://raw.githubusercontent.com/khaldounalhalabi-lone/md2pdf/main/install.sh | bash
 #
 # Downloads the prebuilt md2pdf binary, puts it in ~/.local/bin, and makes sure
 # that directory is on your PATH. No options, no Deno, nothing to configure.
 set -euo pipefail
 
 NAME="md2pdf"
-REPO="${MD2PDF_REPO:-YOUR-USER/md-to-pdf}"
-BRANCH="${MD2PDF_BRANCH:-master}"
+REPO="${MD2PDF_REPO:-khaldounalhalabi-lone/md2pdf}"
+BRANCH="${MD2PDF_BRANCH:-main}"
 BIN_DIR="$HOME/.local/bin"
 TARGET="$BIN_DIR/$NAME"
 
@@ -27,12 +27,6 @@ warn() { printf '  %s!%s %s\n' "$YELLOW" "$RESET" "$1"; }
 die()  { printf '\n  %s✗%s %s\n\n' "$RED" "$RESET" "$1" >&2; exit 1; }
 
 printf '\n  %s%s%s%s  installer%s\n\n' "$BOLD" "$MAGENTA" "$NAME" "$RESET" "$RESET"
-
-case "$REPO" in
-  *YOUR-USER*)
-    die "This installer still has a placeholder repository in it.
-    Set the real one, e.g.:  MD2PDF_REPO=owner/repo bash install.sh" ;;
-esac
 
 # ── 1. which build do we need? ────────────────────────────────────────────
 case "$(uname -s)" in
