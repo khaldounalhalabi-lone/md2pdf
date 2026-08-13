@@ -22,7 +22,7 @@
     "jsr:@std/path@1": "1.1.6",
     "jsr:@std/path@^1.0.8": "1.1.6",
     "jsr:@zip-js/zip-js@^2.7.52": "2.8.36",
-    "npm:fflate@*": "0.8.3",
+    "npm:fflate@~0.8.2": "0.8.3",
     "npm:github-slugger@2": "2.0.0",
     "npm:he@^1.2.0": "1.2.0",
     "npm:katex@0.16": "0.16.47",
@@ -259,16 +259,5 @@
     "source-map-js@1.2.1": {
       "integrity": "sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA=="
     }
-  },
-  "workspace": {
-    "dependencies": [
-      "jsr:@astral/astral@~0.5.6",
-      "jsr:@deno/gfm@0.12",
-      "jsr:@std/assert@1",
-      "jsr:@std/cli@1",
-      "jsr:@std/fmt@1",
-      "jsr:@std/path@1",
-      "npm:fflate@*"
-    ]
   }
 }

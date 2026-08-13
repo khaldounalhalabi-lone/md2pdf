@@ -1,0 +1,6 @@
+# compiled binary from `deno task compile`
+/md2pdf
+/md2pdf.exe
+
+# generated output
+*.pdf

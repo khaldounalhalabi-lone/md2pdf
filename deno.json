@@ -5,13 +5,9 @@
     "install": "deno install -grfA --name md2pdf main.ts",
     "compile": "deno compile -A --output md2pdf main.ts"
   },
-  "imports": {
-    "@std/assert": "jsr:@std/assert@1",
-    "@std/cli": "jsr:@std/cli@^1.0.0",
-    "@std/fmt": "jsr:@std/fmt@^1.0.0",
-    "@std/path": "jsr:@std/path@^1.0.0",
-    "fflate": "npm:fflate",
-    "@deno/gfm": "jsr:@deno/gfm@^0.12.0",
-    "@astral/astral": "jsr:@astral/astral@^0.5.6"
+  "lint": {
+    "rules": {
+      "exclude": ["no-import-prefix"]
+    }
   }
 }
