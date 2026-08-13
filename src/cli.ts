@@ -55,6 +55,19 @@ function statOrNull(path: string): Deno.FileInfo | null {
   }
 }
 
+/**
+ * Make sure the output is actually named like a PDF.
+ *
+ * Typing `test.md` — or a bare name — at the output prompt is easy to do, and
+ * silently writing PDF bytes into a `.md` file helps nobody. Returns the fixed
+ * path, or null when it was already fine.
+ */
+function asPdfPath(path: string): string | null {
+  const ext = extname(path);
+  if (ext.toLowerCase() === ".pdf") return null;
+  return (ext ? path.slice(0, -ext.length) : path) + ".pdf";
+}
+
 /** Paths pasted from a file manager arrive quoted and/or with a ~ prefix. */
 function normalizePath(input: string): string {
   let value = input.trim().replace(/^(['"])(.*)\1$/, "$2");
@@ -107,11 +120,11 @@ function promptForInput(): string {
 
     const stat = statOrNull(path);
     if (!stat) {
-      retry(`No such file: ${shorten(path)}`);
+      retry(`No such file: ${path}`);
       continue;
     }
     if (!stat.isFile) {
-      retry(`Not a file: ${shorten(path)}`);
+      retry(`Not a file: ${path}`);
       continue;
     }
     return path;
@@ -292,6 +305,19 @@ function collectOptions(args: string[]): RunOptions | null {
     if (flags.width === undefined) pageWidth = promptForWidth();
   }
 
+  // ── the output is a PDF whatever it was called
+  const corrected = asPdfPath(outputPath);
+  if (corrected) {
+    if (!quiet) {
+      write(
+        `\n  ${yellow("!")} ${dim("Writing")} ${shorten(corrected)} ${
+          dim(`— the output of ${NAME} is always a PDF`)
+        }\n`,
+      );
+    }
+    outputPath = corrected;
+  }
+
   // ── overwrite guard: ask when we can, fail loudly when we cannot
   let override = flags.override;
   while (!override && statOrNull(outputPath)) {
@@ -330,6 +356,7 @@ async function convert(options: RunOptions) {
   let diagramsDone = 0;
   let diagramsFailed = 0;
   let diagramTotal = 0;
+  const notices: string[] = [];
 
   const onProgress = (event: ProgressEvent) => {
     if (quiet) return;
@@ -368,8 +395,16 @@ async function convert(options: RunOptions) {
         step = new Step("Printing PDF");
         break;
       case "printed":
-        step?.done("headless chrome");
+        step?.done(
+          notices.length > 0
+            ? "headless chrome, no sandbox"
+            : "headless chrome",
+        );
         step = null;
+        break;
+      case "notice":
+        // Printing now would fight the spinner; keep it for the summary.
+        notices.push(event.message);
         break;
     }
   };
@@ -396,6 +431,9 @@ async function convert(options: RunOptions) {
           diagramsFailed === 1 ? " was" : "s were"
         } left as plain text — check your network or diagram syntax.\n\n`,
       );
+    }
+    for (const notice of notices) {
+      write(`  ${yellow("!")} ${dim(notice)}\n\n`);
     }
   }
 }

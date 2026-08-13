@@ -107,7 +107,26 @@ plain lines when it isn't printing to a terminal.
   left in the PDF as plain text and reported at the end, rather than failing the
   whole run.
 - **Chrome or Chromium** — Astral uses an installed one, or downloads a headless
-  build into its cache on first use.
+  build into its cache on first use. Set `MD2PDF_CHROME=/path/to/chrome` to
+  point it at a specific browser instead.
+
+## Troubleshooting
+
+**"No usable sandbox!" / Chrome exits with code 134.** Chrome's sandbox needs
+unprivileged user namespaces, which hardened kernels, containers and recent
+Ubuntu AppArmor profiles often deny. md2pdf notices this, retries with
+`--no-sandbox`, and tells you it did — the PDF still comes out. If it fails even
+then, the reported error is Chrome's own.
+
+**Chrome could not be started.** Point md2pdf at a browser you know works:
+
+```bash
+MD2PDF_CHROME=/usr/bin/google-chrome md2pdf report.md
+```
+
+**A diagram came out as plain text.** That fence failed to render — usually a
+syntax error in the diagram, or no route to plantuml.com. The count of failures
+is printed at the end of the run.
 
 ## Update / uninstall
 

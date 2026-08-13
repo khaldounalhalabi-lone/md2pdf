@@ -35,7 +35,7 @@ export async function mdToPDF(
   onProgress({ kind: "rendered" });
 
   onProgress({ kind: "printing" });
-  const pdf = await htmlToPdf(html);
+  const pdf = await htmlToPdf(html, onProgress);
 
   await Deno.writeFile(outputPath, pdf);
   onProgress({ kind: "printed", bytes: pdf.byteLength });

@@ -9,6 +9,8 @@ export type ProgressEvent =
   | { kind: "diagram"; index: number; total: number; error?: string }
   | { kind: "rendered" }
   | { kind: "printing" }
-  | { kind: "printed"; bytes: number };
+  | { kind: "printed"; bytes: number }
+  /** Something the run worked around; worth telling the user about. */
+  | { kind: "notice"; message: string };
 
 export type ProgressListener = (event: ProgressEvent) => void;
